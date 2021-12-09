@@ -1,30 +1,19 @@
 <?php
 require_once("./connects.php");
 
-$exp = "[7] * 11 - ( [3 - 10] * [7-9])";
-$string1 = "( 2 * 45 [ 11 ) - 7]";
-$string2 = "( 2 { 3 / [ ? } 1 ] )";
-$string3 = "> < > <";
-$result = array();
 
-$brack = ['[', '(', '{', '<'];
-$brack_next = [']', ')', '}', '>'];
-
-
-
-$str = '<><';
-
-function insertResult($str, $result) {
-    global $pdo;
+function insertResult($result, $pdo) {
+    // htmlentities помогла избавиться от xss
+    $str = htmlentities(trim($_POST['str']));
     $brack_table = 'brack';
-    $sql = "INSERT INTO $brack_table(input, result) VALUES('$str', '$result')";
-    // echo $sql;
-    // echo var_dump($pdo);
-    $query = $pdo->prepare($sql);
-    
-    $query->execute(['input' => $str, 'result' => $result]);
+    if(!empty($str)) {
+        $query = $pdo->prepare("INSERT INTO $brack_table(input, result) VALUES(:str, :result)");
+        $query->bindParam(':str', $str);
+        $query->bindParam(':result', $result);
+        
+        $query->execute();
+    }
 }
-
 
 function brackets($str) {
     $brack = [1 => '[', 2 => '(', 3 => '{', 4 => '<'];
@@ -42,32 +31,24 @@ function brackets($str) {
                 array_pop($stack);
             }
             else {
-                $result = ['success' => false];
-                insertResult($str, 'false');
+                $result = 'false';
                 return $result;
             }
         }
     }
     
     if( count($stack)==0 ) {
-        $result = ['success'=> true];
-        insertResult($str, 'true');
+        $result = 'true';
         return $result;
     }
     else {
-        $result = ['success' => false];
-        insertResult($str, 'false');
+        $result = 'false';
         return $result;
     }
 }
-
-$string4 = "< ( { [ 42 ] } ) >";
-$string5 = "( 2 * 44 [ 11 ] ) ";
-$string6 = "< a * ( 4 / 7 - [ 2 - 2] / { 11 } ) >";
-$string7 = "(привет+пока)";
  
-
-$str = $_GET['str'];
+$str = $_POST['str'];
 $answer = brackets($str);
-$data_json = json_encode($answer, JSON_UNESCAPED_UNICODE);
+insertResult($answer, $pdo);
+$data_json = json_encode(['success' => $answer], JSON_UNESCAPED_UNICODE);
 echo $data_json;
