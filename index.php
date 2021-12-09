@@ -1,9 +1,5 @@
 <?php
-require_once("./connects.php");
-
-$sql = 'SELECT * FROM `brack` ORDER BY `id` DESC LIMIT 3';
-$query = $pdo->query($sql);
-
+require_once("./getContent.php");
 ?>
 
 <!DOCTYPE html>
@@ -28,13 +24,15 @@ $query = $pdo->query($sql);
     <div class="container mt-5">
         <div class="row g-3 mb-3">
             <div class="col">
-                <label for="exampleFormControlTextarea1" class="form-label">Введите текст</label>
-                <input class="brack-input form-control form-control-lg mb-4" id="exampleFormControlTextarea1"
-                    type="text" placeholder="< a * ( 4 / 7 - [ 2 - 2] / { 11 } ) >" required>
-                <div class="alert hide" role="alert">
+                <form id="form-brack" action="brackates.php" method="POST">
+                    <label for="exampleFormControlTextarea1" class="form-label">Введите текст</label>
+                    <input class="brack-input form-control form-control-lg mb-4" id="exampleFormControlTextarea1"
+                    name="str" type="text" placeholder="< a * ( 4 / 7 - [ 2 - 2] / { 11 } ) >" required>
+                    <div class="alert hide" role="alert">
 
-                </div>
-                <a href="index.php" class="link btn btn-primary">Отправить</a>
+                    </div>
+                    <button class="link btn btn-primary" type="submit" value="submit">Отправить</button>
+                </form>
             </div>
             <div class="col">
                 <h3 class="text-muted">Последние проверки:</h3>
@@ -42,26 +40,25 @@ $query = $pdo->query($sql);
 
 
                     <?php
-        while($row = $query->fetch(PDO::FETCH_OBJ)) { ?>
+        while($row = $query->fetch(PDO::FETCH_OBJ)) {  ?>
                     <div class="list-group-item list-group-item-action">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h5 class="mb-1">Success: <?=$row->result?></h5>
+                        <div class="item-head d-flex w-100 justify-content-between">
+                            <h5 class="item-title mb-1">Success: <?= $row->result; ?> </h5>
                         </div>
-                        <p class="mb-1"><?=$row->input?></p>
+                        <p class="item-text mb-1"><?= $row->input; ?></p>
                     </div>
-                    <?php }
-        ?>
+                    <?php   } ?>
                 </div>
             </div>
         </div>
     </div>
     <script>
         const input = document.querySelector('.brack-input');
-        const link = document.querySelector('.link');
+        const link = document.getElementById('form-brack');
         const alert = document.querySelector('.alert');
         const listBlock = document.querySelector('.list-group');
 
-        link.addEventListener("click", (event) => {
+        link.addEventListener("submit", (event) => {
             event.preventDefault();
             let inputText = input.value;
             if (input.value == "") {
@@ -77,47 +74,47 @@ $query = $pdo->query($sql);
                         alert.classList.remove(dltClass);
                     }
                     alert.classList.add(addClass);
-                    alert.innerText = text;
+                    alert.textContent = text;
         }
 
         function submitBrack(str) {
             const request = new XMLHttpRequest();
-            const url = "brackates.php?str=" + str;
+            const url = "brackates.php";
+            const params = "str=" + str;
 
-            request.open('GET', url);
+            request.open("POST", url, true);
 
-            request.setRequestHeader('Content-Type', 'application/x-www-form-url');
+            request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
 
             request.addEventListener("readystatechange", () => {
 
                 if (request.readyState === 4 && request.status === 200) {
 
-                    console.log(request.responseText);
                     let answer = JSON.parse(request.responseText);
-                    if (answer.success == true) {
+                    if (answer.success == 'true') {
                         getAlert("alert-danger", "alert-success", "Скобки расставлены правильно!");
                     } else {
                         getAlert("alert-success", "alert-danger", "Скобки расставлены неправильно!");
                     }
-                    insertItem(str, answer.success);
+                    insertItem(".item-text", str);
+                    insertItem(".item-title", 'Success: ' + answer.success);
                    
                 }
             });
             input.value = "";
-            request.send();
+            request.send(params);
         }
 
-        function insertItem(text, res) {
-            let elem = document.createElement("div");
-                elem.setAttribute("class", "list-group-item list-group-item-action");
-                elem.innerHTML = `
-                    <div class="d-flex w-100 justify-content-between">
-                        <h5 class="mb-1">Success: ${res}</h5>
-                    </div>
-                    <p class="mb-1">${text}</p>
-                `;
-                listBlock.lastChild.remove();
-                listBlock.insertBefore(elem, listBlock.firstChild);
+        function insertItem(item, res) {
+            let itemText = document.querySelectorAll(item);
+            for (let i = itemText.length - 1; i >= 0; i--) {
+                if (i === 0) {
+                    break;
+                }
+                itemText[i].textContent = itemText[i-1].textContent;
+
+            }
+            itemText[0].textContent = res;
         }
     </script>
 </body>
